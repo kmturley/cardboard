@@ -166,7 +166,7 @@
       scene.add(mesh);
 
       window.addEventListener('resize', resize, false);
-      setTimeout(resize, 1);
+//      setTimeout(resize, 1);
 
             // Add boxes
             var halfExtents = new CANNON.Vec3(1,1,1);
@@ -246,7 +246,7 @@
     }
 
     function render(dt) {
-        renderer.render( scene, camera );
+//        renderer.render( scene, camera );
       effect.render(scene, camera);
     }
 
@@ -303,9 +303,8 @@
                 targetVec.copy(ray.direction);
             }
 
-            window.addEventListener("click",function(e){
-                if(controls.enabled==true){
-                    console.log('click!');
+      function fire () {
+          console.log('click!');
                     var x = sphereBody.position.x;
                     var y = sphereBody.position.y;
                     var z = sphereBody.position.z;
@@ -329,6 +328,17 @@
                     z += shootDirection.z * (sphereShape.radius*1.02 + ballShape.radius);
                     ballBody.position.set(x,y,z);
                     ballMesh.position.set(x,y,z);
+      }
+
+            container.addEventListener("click",function(e){
+                if(controls.enabled==true){
+                    fire();
+                }
+            });
+
+            container.addEventListener("touchstart",function(e){
+                if(controls.enabled==true){
+                    fire();
                 }
             });
   </script>

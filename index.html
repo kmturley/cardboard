@@ -24,13 +24,15 @@
   <script src="js/third-party/threejs/three.js"></script>
   <script src="js/third-party/threejs/StereoEffect.js"></script>
   <script src="js/third-party/threejs/DeviceOrientationControls.js"></script>
-  <script src="js/third-party/threejs/OrbitControls.js"></script>
+<!--  <script src="js/third-party/threejs/OrbitControls.js"></script>-->
+    <script src="js/PointerLockControls.js"></script>
     <script src="js/cannon.js"></script>
 
   <script>
     var camera, scene, renderer;
     var effect, controls;
     var element, container;
+    var time = Date.now();
 
     var sphereShape, sphereBody, world, physicsMaterial, walls=[], balls=[], ballMeshes=[], boxes=[], boxMeshes=[], material;
 
@@ -91,6 +93,8 @@
 
     function init() {
       renderer = new THREE.WebGLRenderer();
+    renderer.shadowMapEnabled = true;
+    renderer.shadowMapSoft = true;
       element = renderer.domElement;
       container = document.getElementById('example');
       container.appendChild(element);
@@ -99,19 +103,24 @@
 
       scene = new THREE.Scene();
 
-      camera = new THREE.PerspectiveCamera(90, 1, 0.001, 700);
-      camera.position.set(0, 10, 0);
+      //camera = new THREE.PerspectiveCamera(90, 1, 0.001, 700);
+        camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 0.1, 1000 );
+//      camera.position.set(0, 0, 0);
       scene.add(camera);
 
-      controls = new THREE.OrbitControls(camera, element);
-      controls.rotateUp(Math.PI / 4);
-      controls.target.set(
-        camera.position.x + 0.1,
-        camera.position.y,
-        camera.position.z
-      );
-      controls.noZoom = true;
-      controls.noPan = true;
+//      controls = new THREE.OrbitControls(camera, element);
+//      controls.rotateUp(Math.PI / 4);
+//      controls.target.set(
+//        camera.position.x + 0.1,
+//        camera.position.y,
+//        camera.position.z
+//      );
+//      controls.noZoom = true;
+//      controls.noPan = true;
+
+    controls = new PointerLockControls( camera , sphereBody );
+        controls.enabled = true;
+    scene.add( controls.getObject() );
 
       function setOrientationControls(e) {
         if (!e.alpha) {
@@ -151,6 +160,8 @@
       var geometry = new THREE.PlaneGeometry(1000, 1000);
 
       var mesh = new THREE.Mesh(geometry, material);
+        mesh.castShadow = true;
+        mesh.receiveShadow = true;
       mesh.rotation.x = -Math.PI / 2;
       scene.add(mesh);
 
@@ -235,27 +246,36 @@
     }
 
     function render(dt) {
+        renderer.render( scene, camera );
       effect.render(scene, camera);
     }
 
-    function animate(t) {
+    function animate() {
       requestAnimationFrame(animate);
-//      world.step(t);
 
-        // Update ball positions
-        for(var i=0; i<balls.length; i++){
-            ballMeshes[i].position.copy(balls[i].position);
-            ballMeshes[i].quaternion.copy(balls[i].quaternion);
+        if(controls.enabled){
+            world.step(1/60);
+
+            // Update ball positions
+            for(var i=0; i<balls.length; i++){
+                ballMeshes[i].position.copy(balls[i].position);
+                ballMeshes[i].quaternion.copy(balls[i].quaternion);
+            }
+
+            // Update box positions
+            for(var i=0; i<boxes.length; i++){
+                boxMeshes[i].position.copy(boxes[i].position);
+                boxMeshes[i].quaternion.copy(boxes[i].quaternion);
+            }
         }
 
-        // Update box positions
-        for(var i=0; i<boxes.length; i++){
-            boxMeshes[i].position.copy(boxes[i].position);
-            boxMeshes[i].quaternion.copy(boxes[i].quaternion);
-        }
 
-      update(clock.getDelta());
-      render(clock.getDelta());
+//        renderer.render( scene, camera );
+//        controls.update( Date.now() - time );
+
+          update(Date.now() - time);
+          render(Date.now() - time);
+        time = Date.now();
     }
 
     function fullscreen() {

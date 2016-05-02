@@ -8,6 +8,7 @@
 (function () {
     'use strict';
     var module = {
+        stereo: true,
         init: function () {
             var me = this,
                 light = new THREE.HemisphereLight(0xffffff, 0xffffff, 0.6),
@@ -15,13 +16,14 @@
             this.cannon();
             this.clock = new THREE.Clock();
             this.renderer = new THREE.WebGLRenderer();
-            this.renderer.shadowMap.enabled = true;
-            this.renderer.shadowMapSoft = true;
             this.renderer.setClearColor(0xA5DBFF);
+            this.renderer.setPixelRatio(window.devicePixelRatio ? window.devicePixelRatio : 1);
             this.element = this.renderer.domElement;
             this.container = document.getElementById('scene');
             this.container.appendChild(this.element);
-            this.effect = new THREE.StereoEffect(this.renderer);
+            if (this.stereo) {
+                this.effect = new THREE.StereoEffect(this.renderer);
+            }
             this.scene = new THREE.Scene();
             this.camera = new THREE.PerspectiveCamera(90, 1, 0.001, 700);
             this.camera.position.set(0, 1, 0);
@@ -37,21 +39,11 @@
             this.scene.add(light);
 
             // LIGHTS
-            var hemiLight = new THREE.HemisphereLight( 0xffffff, 0xffffff, 0.6 );
+            var hemiLight = new THREE.HemisphereLight( 0xffffff, 0xffffff, 1 );
             hemiLight.color.setHSL( 0.6, 1, 0.6 );
             hemiLight.groundColor.setHSL( 0.095, 1, 0.75 );
             hemiLight.position.set( 0, 500, 0 );
             this.scene.add( hemiLight );
-            var dirLight = new THREE.DirectionalLight( 0xffffff, 1 );
-            dirLight.color.setHSL( 0.1, 1, 0.95 );
-            dirLight.position.set(1, 2, 1);
-            dirLight.target.position.set( 0, 0, 0 );
-            dirLight.position.multiplyScalar( 50 );
-            dirLight.castShadow = true;
-            dirLight.shadow.bias = 0.0001;
-            dirLight.shadow.mapSize.width = 2048;
-            dirLight.shadow.mapSize.height = 2048;
-            this.scene.add( dirLight );
 
             this.material = new THREE.MeshPhongMaterial({
                 color: 0xffffff,
@@ -76,7 +68,7 @@
             texture3.anisotropy = this.renderer.getMaxAnisotropy();
 
             this.material3 = new THREE.MeshPhongMaterial({
-                color: 0x666666,
+                color: 0x999999,
                 specular: 0x000000,
                 shininess: 0,
                 shading: THREE.FlatShading,
@@ -87,7 +79,6 @@
             var groundGeo = new THREE.PlaneBufferGeometry( 100, 100 );
             var ground = new THREE.Mesh( groundGeo, this.material3 );
             ground.rotation.x = -Math.PI/2;
-            ground.receiveShadow = true;
             this.scene.add( ground );
 
             window.addEventListener('resize', function () {
@@ -188,7 +179,9 @@
             this.camera.aspect = width / height;
             this.camera.updateProjectionMatrix();
             this.renderer.setSize(width, height);
-            this.effect.setSize(width, height);
+            if (this.stereo) {
+                this.effect.setSize(width, height);
+            }
         },
         update: function (dt) {
             this.resize();
@@ -196,7 +189,11 @@
             this.controls.update(dt);
         },
         render: function () {
-            this.effect.render(this.scene, this.camera);
+            if (this.stereo) {
+                this.effect.render(this.scene, this.camera);
+            } else {
+                this.renderer.render(this.scene, this.camera);
+            }
         },
         animate: function (t) {
             var i = 0,
@@ -245,18 +242,20 @@
                 N = 5,
                 last = null;
             for (i = 0; i < 7; i += 1) {
-                var x = (Math.random() - 0.5) * 20,
-                    y = 1 + (Math.random() - 0.5),
-                    z = (Math.random() - 0.5) * 20,
+                var x = (Math.random() - 0.5) * 5,
+                    y = 1, //(Math.random() - 0.5),
+                    z = (Math.random() - 0.5) * 5,
                     boxBody = new CANNON.Body({ mass: 5 }),
                     boxMesh = new THREE.Mesh(boxGeometry, this.material);
+                if (x > 0) { x += 3; }
+                else { x -= 3; }
+                if (z > 0) { z += 3; }
+                else { z -= 3; }
                 boxBody.addShape(boxShape);
                 this.world.add(boxBody);
                 this.scene.add(boxMesh);
                 boxBody.position.set(x, y, z);
                 boxMesh.position.set(x, y, z);
-                boxMesh.castShadow = true;
-                boxMesh.receiveShadow = true;
                 this.boxes.push(boxBody);
                 this.boxMeshes.push(boxMesh);
             }
@@ -271,8 +270,6 @@
                 boxbody.position.set(5, (N - i) * (size * 2 + 2 * space) + size * 2 + space, 0);
                 boxbody.linearDamping = 0.01;
                 boxbody.angularDamping = 0.01;
-                // boxMesh.castShadow = true;
-                boxMesh2.receiveShadow = true;
                 this.world.add(boxbody);
                 this.scene.add(boxMesh2);
                 this.boxes.push(boxbody);
@@ -304,8 +301,6 @@
                 ballBody.addShape(this.ballShape);
                 this.world.add(ballBody);
                 this.scene.add(ballMesh);
-                ballMesh.castShadow = true;
-                ballMesh.receiveShadow = true;
                 this.balls.push(ballBody);
                 this.ballMeshes.push(ballMesh);
                 this.getShootDir(this.shootDirection);

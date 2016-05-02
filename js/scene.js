@@ -3,20 +3,18 @@
  * by kmturley
  */
 
-/*globals THREE, CANNON, PointerLockControls */
+/*globals THREE, CANNON */
 
 (function () {
     'use strict';
     var module = {
         init: function () {
-            console.log('init');
             var me = this,
                 light = new THREE.HemisphereLight(0x777777, 0x000000, 0.6),
                 texture = THREE.ImageUtils.loadTexture('img/checker.png'),
                 geometry = new THREE.PlaneGeometry(1000, 1000);
             this.cannon();
             this.clock = new THREE.Clock();
-
             this.renderer = new THREE.WebGLRenderer();
             this.renderer.shadowMapEnabled = true;
             this.renderer.shadowMapSoft = true;
@@ -26,10 +24,13 @@
             this.effect = new THREE.StereoEffect(this.renderer);
             this.scene = new THREE.Scene();
             this.camera = new THREE.PerspectiveCamera(90, 1, 0.001, 700);
+            this.camera.position.set(0, 1, 0);
             this.scene.add(this.camera);
-            this.controls = new PointerLockControls(this.camera, this.sphereBody);
-            this.controls.enabled = true;
-            this.scene.add(this.controls.getObject());
+            this.controls = new THREE.OrbitControls(this.camera, this.element);
+            this.controls.rotateUp(Math.PI / 4);
+            this.controls.target.set(this.camera.position.x + 0.1, this.camera.position.y, this.camera.position.z);
+            this.controls.noZoom = true;
+            this.controls.noPan = true;
             this.setControls = this.setOrientationControls.bind(this);
             window.addEventListener('deviceorientation', this.setControls, true);
             this.scene.add(light);
@@ -56,9 +57,6 @@
                 me.resize();
             }, 1);
             this.container.addEventListener("click", function (e) {
-                me.fire();
-            });
-            this.container.addEventListener("touchstart", function (e) {
                 me.fire();
             });
             this.addContent();
@@ -132,17 +130,15 @@
             this.world.add(groundBody);
         },
         setOrientationControls: function (e) {
-            console.log('setOrientationControls');
             var me = this;
             if (!e.alpha) {
                 return;
             }
             this.controls = new THREE.DeviceOrientationControls(this.camera, true);
+            this.controls.enabled = true;
             this.controls.connect();
             this.controls.update();
-            this.element.addEventListener('click', function (e) {
-                me.fullscreen(e);
-            }, false);
+            this.firstTap = false;
             window.removeEventListener('deviceorientation', this.setControls, true);
         },
         resize: function () {
@@ -254,7 +250,11 @@
             }
         },
         fire: function () {
-            if (this.controls.enabled === true) {
+            if (this.firstTap === false) {
+                this.fullscreen();
+                this.firstTap = true;
+            }
+            if (this.controls.enabled !== false) {
                 var x = this.sphereBody.position.x,
                     y = this.sphereBody.position.y,
                     z = this.sphereBody.position.z,
